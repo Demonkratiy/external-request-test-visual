@@ -1,0 +1,26 @@
+{
+    "visual": {
+        "name": "launchHostUrl",
+        "displayName": "launchHostUrl",
+        "guid": "launchHostUrlF864D1D92D754F85B8D900626D37A188",
+        "visualClassName": "Visual",
+        "version": "1.0.0.0",
+        "description": "launchurl",
+        "supportUrl": "launchurl",
+        "gitHubUrl": "launchurl"
+    },
+    "apiVersion": "5.11.0",
+    "author": {
+        "name": "launchurl",
+        "email": "launchurl"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": null,
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": [],
+    "version": "1.0.0.0"
+}

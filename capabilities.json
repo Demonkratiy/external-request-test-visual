@@ -1,0 +1,13 @@
+{
+    "dataRoles": [],
+    "dataViewMappings": [],
+    "supportsEmptyDataView": true,
+    "supportsLandingPage": true,
+    "privileges": [
+        {
+            "name": "WebAccess",
+            "essential": true,
+            "parameters": ["https://*.thecatapi.com"]
+        }
+    ]
+}
