@@ -1,7 +1,7 @@
 {
     "visual": {
         "name": "launchHostUrl",
-        "displayName": "launchHostUrl",
+        "displayName": "Launch host url, webAcces",
         "guid": "launchHostUrlF864D1D92D754F85B8D900626D37A188",
         "visualClassName": "Visual",
         "version": "1.0.0.0",
