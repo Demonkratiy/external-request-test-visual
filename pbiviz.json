@@ -1,18 +1,18 @@
 {
     "visual": {
-        "name": "launchHostUrl",
-        "displayName": "Launch host url, webAcces",
-        "guid": "launchHostUrlF864D1D92D754F85B8D900626D37A188",
+        "name": "externalRequestTestVisual",
+        "displayName": "External Request Test Visual",
+        "guid": "externalRequestTestVisualD3DADF94AA024BE0B8AACEBC1445D5E6",
         "visualClassName": "Visual",
         "version": "1.0.0.0",
-        "description": "launchurl",
-        "supportUrl": "launchurl",
-        "gitHubUrl": "launchurl"
+        "description": "Test visual for verifying how Power BI handles external requests from a custom visual: host.launchUrl() and the WebAccess privilege",
+        "supportUrl": "https://github.com/Demonkratiy/external-request-test-visual/issues",
+        "gitHubUrl": "https://github.com/Demonkratiy/external-request-test-visual"
     },
     "apiVersion": "5.11.0",
     "author": {
-        "name": "launchurl",
-        "email": "launchurl"
+        "name": "Demonkratiy",
+        "email": "39551830+Demonkratiy@users.noreply.github.com"
     },
     "assets": {
         "icon": "assets/icon.png"
