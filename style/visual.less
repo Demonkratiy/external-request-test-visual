@@ -1,7 +1,7 @@
 .launchUrlVisual {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 14px;
-    #container {
+    .container {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -24,6 +24,44 @@
             &:active{
                 background: #b0b0b0;
             }
+            &:disabled{
+                cursor: default;
+                opacity: 0.6;
+                background: #eee;
+            }
+        }
+    }
+
+    .scenario {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .status {
+        &:empty {
+            display: none;
+        }
+        &.pending {
+            color: #605e5c;
+        }
+        &.success {
+            color: #107c10;
+        }
+        &.failure {
+            color: #a4262c;
+        }
+    }
+
+    .result-image {
+        display: none;
+        max-width: 200px;
+        max-height: 200px;
+        margin-top: 10px;
+
+        &.visible {
+            display: block;
         }
     }
 }

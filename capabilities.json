@@ -1,36 +1,9 @@
 {
-    "dataRoles": [
-        {
-            "displayName": "Category Data",
-            "name": "category",
-            "kind": "Grouping"
-        }
-    ],
-    "dataViewMappings": [
-        {
-            "conditions": [
-                {
-                    "category": {
-                        "min": 1
-                    }
-                }
-            ],
-            "categorical": {
-                "categories": {
-                    "for": {
-                        "in": "category"
-                    }
-                }
-            }
-        }
-    ],
-    "supportsEmptyDataView": true,
-    "supportsLandingPage": true,
     "privileges": [
         {
             "name": "WebAccess",
             "essential": true,
-            "parameters": ["https://*.thecatapi.com", "https://*.thedogapi.com"]
+            "parameters": ["https://dog.ceo", "https://*.dog.ceo"]
         }
     ],
     "objects": {
@@ -41,9 +14,9 @@
                         "text": true
                     }
                 },
-                "dogs": {
+                "breed": {
                     "type": {
-                        "bool": true
+                        "enumeration": []
                     }
                 }
             }
