@@ -57,11 +57,26 @@ interface IScenario {
     kind: ScenarioKind;
 }
 
-interface IFetchOutcome {
-    /** Set only on failure; imageUrl carries the result otherwise. */
-    reason?: string;
-    imageUrl?: string;
+const enum FetchResultKind {
+    Ok = "ok",
+    Rejected = "rejected",
+    HttpError = "httpError",
+    BadJson = "badJson",
+    BadShape = "badShape",
 }
+
+interface IFetchSuccess {
+    kind: FetchResultKind.Ok;
+    imageUrl: string;
+    imageOrigin: string;
+}
+
+interface IFetchFailure {
+    kind: FetchResultKind.Rejected | FetchResultKind.HttpError | FetchResultKind.BadJson | FetchResultKind.BadShape;
+    reason: string;
+}
+
+type FetchResult = IFetchSuccess | IFetchFailure;
 
 export class Visual implements IVisual {
     private target: HTMLElement;
@@ -72,7 +87,7 @@ export class Visual implements IVisual {
     private formattingSettingsService: FormattingSettingsService; 
     private settings: Settings = new Settings();
 
-    public static className: string = "launchUrlVisual";
+    public static className: string = "externalRequestTestVisual";
     public static documentationUrl: string = "https://learn.microsoft.com/en-us/power-bi/developer/visuals/launch-url";
     /** Whitelisted in capabilities.json; serves its images from images.dog.ceo, a subdomain of the same domain. */
     public static dogApiUrl: string = "https://dog.ceo/api/breeds/image/random";
@@ -148,6 +163,9 @@ export class Visual implements IVisual {
 
             try {
                 await run();
+            } catch (error) {
+                reset();
+                Visual.setStatus(requestStatus, StatusState.Failure, `Unexpected error — ${Visual.describe(error)}`);
             } finally {
                 button.disabled = false;
             }
@@ -165,20 +183,32 @@ export class Visual implements IVisual {
         }
     }
 
-    /** The URL is not whitelisted, so being blocked is the expected - and therefore "green" - outcome. */
+    /**
+     * The URL is not whitelisted, so being rejected is the expected outcome — but a rejection alone cannot tell a
+     * WebAccess block from a dead network, and any other failure proves the request did reach the server. A request
+     * to the whitelisted origin therefore acts as the control that decides between "proven", "broken" and "unknown".
+     */
     private static async runBlockedFetch(requestStatus: HTMLElement): Promise<void> {
-        const outcome = await Visual.fetchImageUrl(Visual.nonWhitelistedApiUrl);
-        if (outcome.reason) {
-            Visual.setStatus(requestStatus, StatusState.Success, `Blocked as expected — ${outcome.reason}`);
-        } else {
-            Visual.setStatus(requestStatus, StatusState.Failure, "Request succeeded — WebAccess did NOT block a non-whitelisted origin");
+        const blocked = await Visual.fetchImageUrl(Visual.nonWhitelistedApiUrl);
+        if (blocked.kind !== FetchResultKind.Rejected) {
+            const detail = blocked.kind === FetchResultKind.Ok ? "a response was returned" : blocked.reason;
+            Visual.setStatus(requestStatus, StatusState.Failure, `Request reached the server — WebAccess did NOT block a non-whitelisted origin (${detail})`);
+            return;
         }
+
+        const control = await Visual.fetchImageUrl(Visual.dogApiUrl);
+        if (control.kind === FetchResultKind.Rejected) {
+            Visual.setStatus(requestStatus, StatusState.Idle, `Inconclusive — the whitelisted control request was rejected too, so the network is unavailable: ${control.reason}`);
+            return;
+        }
+
+        Visual.setStatus(requestStatus, StatusState.Success, `Blocked as expected — ${blocked.reason}`);
     }
 
     private async runAllowedFetch(requestStatus: HTMLElement, imageStatus: HTMLElement, image: HTMLImageElement): Promise<void> {
-        const { imageUrl, reason } = await Visual.fetchImageUrl(this.getDogApiUrl());
-        if (!imageUrl) {
-            Visual.setStatus(requestStatus, StatusState.Failure, `API request failed — ${reason}`);
+        const outcome = await Visual.fetchImageUrl(this.getDogApiUrl());
+        if (outcome.kind !== FetchResultKind.Ok) {
+            Visual.setStatus(requestStatus, StatusState.Failure, `API request failed — ${outcome.reason}`);
             Visual.setStatus(imageStatus, StatusState.Idle, "Image not requested");
             return;
         }
@@ -186,12 +216,12 @@ export class Visual implements IVisual {
         Visual.setStatus(requestStatus, StatusState.Success, "API request succeeded");
         Visual.setStatus(imageStatus, StatusState.Pending, "Loading image…");
 
-        const loaded = await Visual.loadImage(image, imageUrl);
+        const loaded = await Visual.loadImage(image, outcome.imageUrl);
         if (loaded) {
             Visual.setStatus(imageStatus, StatusState.Success, "Image loaded");
         } else {
             Visual.hideImage(image);
-            Visual.setStatus(imageStatus, StatusState.Failure, `Image blocked — ${new URL(imageUrl).origin} is not reachable`);
+            Visual.setStatus(imageStatus, StatusState.Failure, `Image blocked — ${outcome.imageOrigin} is not reachable`);
         }
     }
 
@@ -202,31 +232,38 @@ export class Visual implements IVisual {
             : Visual.dogApiBreedUrl.replace("{breed}", breed);
     }
 
-    private static async fetchImageUrl(url: string): Promise<IFetchOutcome> {
+    private static async fetchImageUrl(url: string): Promise<FetchResult> {
         let response: Response;
         try {
             response = await fetch(url);
         } catch (error) {
-            return { reason: `request rejected (CSP or network): ${Visual.describe(error)}` };
+            return { kind: FetchResultKind.Rejected, reason: `request rejected (CSP or network): ${Visual.describe(error)}` };
         }
 
         if (!response.ok) {
-            return { reason: `HTTP ${response.status} ${response.statusText}` };
+            return { kind: FetchResultKind.HttpError, reason: `HTTP ${response.status} ${response.statusText}` };
         }
 
         let data: unknown;
         try {
             data = await response.json();
         } catch (error) {
-            return { reason: `response is not valid JSON: ${Visual.describe(error)}` };
+            return { kind: FetchResultKind.BadJson, reason: `response is not valid JSON: ${Visual.describe(error)}` };
         }
 
         const imageUrl: unknown = (data as { message?: unknown })?.message;
         if (typeof imageUrl !== "string") {
-            return { reason: "unexpected response shape: 'message' is not a URL string" };
+            return { kind: FetchResultKind.BadShape, reason: "unexpected response shape: 'message' is not a URL string" };
         }
 
-        return { imageUrl };
+        let imageOrigin: string;
+        try {
+            imageOrigin = new URL(imageUrl).origin;
+        } catch {
+            return { kind: FetchResultKind.BadShape, reason: `unexpected response shape: 'message' is not a valid URL: ${imageUrl}` };
+        }
+
+        return { kind: FetchResultKind.Ok, imageUrl, imageOrigin };
     }
 
     /** A blocked image surfaces as an async error event, so it must be awaited rather than caught. */
@@ -263,7 +300,7 @@ export class Visual implements IVisual {
             [StatusState.Failure]: "✘ ",
         };
 
-        status.classList.remove(StatusState.Pending, StatusState.Success, StatusState.Failure);
+        status.classList.remove(StatusState.Idle, StatusState.Pending, StatusState.Success, StatusState.Failure);
         status.classList.add(state);
         status.textContent = text ? `${marks[state] ?? ""}${text}` : "";
     }
