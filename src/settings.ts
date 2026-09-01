@@ -1,7 +1,21 @@
+import powerbi from "powerbi-visuals-api";
+import IEnumMember = powerbi.IEnumMember;
+
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import CompositeCard = formattingSettings.CompositeCard;
 import SimpleCard = formattingSettings.SimpleCard;
 import Model = formattingSettings.Model;
+
+export const RANDOM_BREED: string = "random";
+
+const breedItems: IEnumMember[] = [
+    { value: RANDOM_BREED, displayName: "Any breed" },
+    { value: "husky", displayName: "Husky" },
+    { value: "beagle", displayName: "Beagle" },
+    { value: "akita", displayName: "Akita" },
+    { value: "boxer", displayName: "Boxer" },
+    { value: "basenji", displayName: "Basenji" },
+];
 
 class TextGroup extends SimpleCard {
     public name: string = "textGroup";
@@ -17,16 +31,17 @@ class TextGroup extends SimpleCard {
 }
 
 class ImageGroup extends SimpleCard {
-    public name: string = "dogGroup";
+    public name: string = "imageGroup";
     public displayName: string = "Image settings";
 
-    public useDogs = new formattingSettings.ToggleSwitch({
-        name: "dogs",
-        displayName: "Show dogs",
-        value: false
+    public breed = new formattingSettings.ItemDropdown({
+        name: "breed",
+        displayName: "Breed",
+        items: breedItems,
+        value: breedItems[0]
     });
 
-    slices?: formattingSettings.Slice[] = [this.useDogs];
+    slices?: formattingSettings.Slice[] = [this.breed];
 }
 
 export class DescriptionCard extends CompositeCard {
